@@ -1,0 +1,90 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    restart: always
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+
+  celery:
+    build: .
+    entrypoint: ""
+    command: sh -c "./wait-for-it.sh postgres:5432 -- celery -A core worker --loglevel=info"
+    restart: always
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+
+  flower:
+    image: mher/flower
+    restart: always
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+    depends_on:
+      - redis
+
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    restart: always
+    ports:
+      - "9808:9808"
+    command: --broker-url=${CELERY_BROKER_URL}
+    depends_on:
+      - redis
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - celery-exporter
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/dashboards_json:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
+  postgres:
+    image: postgres:15
+    restart: always
+    ports:
+      - "5431:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:
+  grafana_data:

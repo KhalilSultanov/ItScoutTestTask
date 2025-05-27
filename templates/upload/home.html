@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Загруженные изображения</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        h1, h2 {
+            color: #222;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            background-color: #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #343a40;
+            color: #fff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f1f1f1;
+        }
+
+        form {
+            background: #fff;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-width: 400px;
+        }
+
+        input[type="file"] {
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<h1>Загруженные изображения</h1>
+<table>
+    <tr>
+        <th>#</th>
+        <th>Файл</th>
+        <th>Число</th>
+        <th>Время загрузки</th>
+    </tr>
+    {% for image in images %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ image.image.name }}</td>
+            <td>{{ image.result }}</td>
+            <td>{{ image.uploaded_at|date:"d.m.Y H:i:s" }}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+<h2>Загрузить одно изображение</h2>
+{% if error %}
+    <div style="color: red; margin-bottom: 1rem; font-weight: bold;">
+        {{ error }}
+    </div>
+{% endif %}
+<form method="post" enctype="multipart/form-data" action="/upload/">
+    {% csrf_token %}
+    <input type="file" name="image" required>
+    <br>
+    <button type="submit">Загрузить</button>
+</form>
+
+<h2>Тестовая загрузка (100 изображений)</h2>
+<form method="post" enctype="multipart/form-data" action="/test-load/">
+    {% csrf_token %}
+    <input type="file" name="image" required>
+    <br>
+    <button type="submit">Отправить</button>
+</form>
+{% if request.GET.refresh %}
+    <script>
+        setTimeout(() => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("refresh");
+            window.location.href = url.toString();
+        }, 1000);
+    </script>
+{% endif %}
+</body>
+</html>
