@@ -10,69 +10,31 @@ jobs:
   quality-checks:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    env:
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_HOST: localhost
-      POSTGRES_PORT: 5432
-      CELERY_BROKER_URL: ${{ secrets.CELERY_BROKER_URL }}
-      DJANGO_SETTINGS_MODULE: ${{ secrets.DJANGO_SETTINGS_MODULE }}
-      PYTHONPATH: ${{ secrets.PYTHONPATH }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+      - name: Set up Docker Compose
+        run: docker compose --version
 
-      - name: Install Poetry
+      - name: Build and start containers
+        run: docker-compose up -d --build
+
+      - name: Wait for containers to be healthy
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          docker-compose -f docker-compose.ci.yml ps
+          docker-compose -f docker-compose.ci.yml exec -T web sh -c "
+            for i in \$(seq 1 30); do
+              if pg_isready -h postgres -U \$POSTGRES_USER; then
+                echo 'Postgres is ready'
+                exit 0
+              fi
+              echo 'Waiting for postgres...'
+              sleep 1
+            done
+            echo 'Postgres not ready'
+            exit 1
+          "
 
-      - name: Install dependencies
-        run: poetry install --with dev
-
-      - name: Run flake8
-        run: poetry run flake8 core photo_service
-
-      - name: Run black (check only)
-        run: poetry run black . --check
-
-      - name: Run mypy
-        run: poetry run mypy .
-
-      - name: Wait for Postgres
-        run: |
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5432 -U $POSTGRES_USER; then
-              echo "Postgres is ready"
-              exit 0
-            fi
-            echo "Waiting for Postgres..."
-            sleep 1
-          done
-          echo "Postgres failed to start"
-          exit 1
-
-      - name: Run tests
-        run: poetry run pytest
+      - name: Run tests inside web container
+        run: docker-compose -f docker-compose.ci.yml exec -T web poetry run pytest
