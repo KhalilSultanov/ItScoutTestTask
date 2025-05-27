@@ -4,7 +4,6 @@ version = "0.1.0"
 description = ""
 authors = ["Khalil <h.sultanoff@yandex.ru>"]
 readme = "README.md"
-packages = [{ include = "it-scout-test-task" }]
 
 [tool.poetry.dependencies]
 python = ">=3.11"
