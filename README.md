@@ -22,7 +22,7 @@
 CELERY_BROKER_URL=redis://redis:6379/0
 
 TELEGRAM_CHAT_ID=your_telegram_chat_id (можно узнать у бота @getmyid_bot)
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token (создайте своего бота в @BotFather, и вставьте в .env его токен)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token (создайте своего бота в @BotFather, вставьте в .env его токен и не забудьте запустить его, иначе сообщение не будет вам выслано.)
 
 POSTGRES_DB=your_database_name
 POSTGRES_USER=your_database_user
