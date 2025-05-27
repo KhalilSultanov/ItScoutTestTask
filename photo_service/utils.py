@@ -8,14 +8,14 @@ def validate_image_file(image_file, image_bytes):
     allowed_ext = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 
     if image_file.content_type not in allowed_mime:
-        raise ValueError("Недопустимый MIME-тип файла.")
+        raise ValueError("Unsupported MIME type.")
 
     ext = Path(image_file.name).suffix.lower()
     if ext not in allowed_ext:
-        raise ValueError("Недопустимое расширение файла.")
+        raise ValueError("Unsupported file extension.")
 
     try:
         img = Image.open(BytesIO(image_bytes))
         img.verify()
     except UnidentifiedImageError:
-        raise ValueError("Загруженный файл не является корректным изображением.")
+        raise ValueError("Uploaded file is not a valid image.")
